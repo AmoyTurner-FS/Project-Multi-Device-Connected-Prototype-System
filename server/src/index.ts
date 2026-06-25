@@ -151,6 +151,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("officer-action", (action: OfficerAction) => {
+    console.log("Officer Action Received:", action);
     switch (action.type) {
       case "set-zone":
         facilityState.activeZone = action.value as FacilityState["activeZone"];
