@@ -3,15 +3,39 @@ import { useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { socket } from "./src/socket";
 
+type FacilityState = {
+  mode: string;
+  activeZone: string;
+  incidentLevel: string;
+  backupRequested: boolean;
+  lockdownActive: boolean;
+  broadcastMessage: string;
+};
+
 export default function App() {
   const [currentZone, setCurrentZone] = useState("INTAKE");
   const [facilityStatus, setFacilityStatus] = useState("NORMAL");
+  const [backupRequested, setBackupRequested] = useState(false);
+  const [lockdownActive, setLockdownActive] = useState(false);
 
   useEffect(() => {
     socket.emit("register-client", "mobile");
 
+    socket.on("facility-update", (state: FacilityState) => {
+      setCurrentZone(state.activeZone.toUpperCase().replace("-", " "));
+      setBackupRequested(state.backupRequested);
+      setLockdownActive(state.lockdownActive);
+
+      if (state.lockdownActive) {
+        setFacilityStatus("LOCKDOWN");
+      } else {
+        setFacilityStatus(state.incidentLevel.toUpperCase());
+      }
+    });
+
     return () => {
       socket.disconnect();
+      socket.off("facility-update");
     };
   }, []);
 
@@ -100,11 +124,13 @@ export default function App() {
           style={styles.backupButton}
           onPress={() => {
             socket.emit("officer-action", {
-              type: "request-backup",
+              type: backupRequested ? "clear-backup" : "request-backup",
             });
           }}
         >
-          <Text style={styles.actionText}>🆘 Request Backup</Text>
+          <Text style={styles.actionText}>
+            {backupRequested ? "✅ Clear Backup" : "🆘 Request Backup"}
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -123,14 +149,14 @@ export default function App() {
         <TouchableOpacity
           style={styles.lockdownButton}
           onPress={() => {
-            setFacilityStatus("LOCKDOWN");
-
             socket.emit("officer-action", {
-              type: "start-lockdown",
+              type: lockdownActive ? "end-lockdown" : "start-lockdown",
             });
           }}
         >
-          <Text style={styles.actionText}>🔒 Lockdown</Text>
+          <Text style={styles.actionText}>
+            {lockdownActive ? "🔓 End Lockdown" : "🔒 Lockdown"}
+          </Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
