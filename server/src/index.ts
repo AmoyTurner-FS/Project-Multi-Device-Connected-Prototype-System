@@ -217,13 +217,11 @@ io.on("connection", (socket) => {
       case "clear-incident":
         facilityState.incidentLevel = "normal";
         facilityState.backupRequested = false;
-        facilityState.lockdownActive = false;
-        facilityState.mode = "normal";
         facilityState.zones = facilityState.zones.map((zone) => ({
           ...zone,
           status: "normal",
         }));
-        addEvent("Admin cleared all incidents");
+        addEvent("Admin cleared active incident");
         break;
 
       case "broadcast":
